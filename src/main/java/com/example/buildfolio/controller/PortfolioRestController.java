@@ -4,6 +4,7 @@ import com.example.buildfolio.model.ApiResponse;
 import com.example.buildfolio.model.Portfolio;
 import com.example.buildfolio.security.interf.MyUserDetails;
 import com.example.buildfolio.service.PortfolioService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -18,7 +19,7 @@ public class PortfolioRestController {
     private PortfolioService portfolioService;
 
     @PostMapping("/save")
-    public ResponseEntity<ApiResponse> savePortfolio(@RequestBody Portfolio portfolio, Principal principal){
+    public ResponseEntity<ApiResponse> savePortfolio(@Valid @RequestBody Portfolio portfolio, Principal principal){
         if (principal instanceof UsernamePasswordAuthenticationToken == false) {
             throw new RuntimeException("User Not Exist");
         }
@@ -49,7 +50,7 @@ public class PortfolioRestController {
     }
 
     @PutMapping("/update")
-    public ResponseEntity<ApiResponse> updatePortfolio(@RequestBody Portfolio portfolio, Principal principal){
+    public ResponseEntity<ApiResponse> updatePortfolio(@Valid @RequestBody Portfolio portfolio, Principal principal){
         if (principal instanceof UsernamePasswordAuthenticationToken == false) {
             throw new RuntimeException("User Not Exist");
         }

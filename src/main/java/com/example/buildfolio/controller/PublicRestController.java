@@ -15,12 +15,18 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.HttpClientErrorException;
+
+import java.util.Arrays;
 import java.util.List;
 
 @RestController
@@ -49,6 +55,9 @@ public class PublicRestController {
     @Autowired
     private PortfolioService portfolioService;
 
+    @Value("${cookie.samesite}")
+    private String same_site;
+
     @PostMapping("/user_login")
     public ResponseEntity<JwtAuthResponse> createToken(@Valid @RequestBody AuthCredential authCredential,
                                                        HttpServletRequest req, HttpServletResponse res) {
@@ -74,17 +83,14 @@ public class PublicRestController {
         }
         String token = this.jwtTokenHelper.generateToken(authCredential.getUserNameOrEmail());
         JwtAuthResponse response = new JwtAuthResponse();
-        Cookie cookie = new Cookie("authorization_token","Bearer_"+token);
-        cookie.setPath("/");
-        cookie.setHttpOnly(true);
-        cookie.setSecure(true);
-        res.addCookie(cookie);
         response.setToken("Bearer_"+token);
+        ResponseCookie responseCookie = ResponseCookie.from("authorization_token","Bearer_"+token)
+                .path("/").sameSite(same_site).httpOnly(true).secure(true).build();
         response.setSuccess(true);
         response.setRole(userDetails.getRole());
         response.setUserName(userDetails.getUsername());
         response.setMessage("Login SuccessFully");
-        return ResponseEntity.status(200).body(response);
+        return ResponseEntity.status(200).header(HttpHeaders.SET_COOKIE,responseCookie.toString()).body(response);
     }
 
     private void authenticate(String username, String password) throws Exception {
@@ -136,7 +142,7 @@ public class PublicRestController {
     }
 
     @PostMapping("/send-otp")
-    public ResponseEntity<ApiResponse> sendOtp(@RequestParam String email, HttpSession session){
+    public ResponseEntity<ApiResponse> sendOtp(@RequestParam String email, HttpSession session, HttpServletResponse res){
         String otp = OTPService.generateOtp();
         boolean success = emailService.sendOtpEmail(email,otp);
         ApiResponse apiResponse = new ApiResponse();
@@ -148,7 +154,7 @@ public class PublicRestController {
         else{
             apiResponse.setMessage("Something Went Wrong");
         }
-        return ResponseEntity.status(200).body(apiResponse);
+        return ResponseEntity.status(200).body(apiResponse);//header(HttpHeaders.SET_COOKIE,responseCookie.toString()).body(apiResponse);
     }
 
     @GetMapping("/verify-otp")
@@ -162,7 +168,7 @@ public class PublicRestController {
 
     @PostMapping("/change-pass")
     public ResponseEntity<ApiResponse> changePassByPhoneNumber
-            (@RequestBody ResetPassword resetPassword , HttpServletRequest req, HttpServletResponse res){
+            (@RequestBody @Valid ResetPassword resetPassword , HttpServletRequest req, HttpServletResponse res){
         String generatedOTP = (String)req.getSession().getAttribute(resetPassword.getEmail()+"_otp");
         if(!resetPassword.getOtp().equals(generatedOTP)){
             return ResponseEntity.status(200).body(new ApiResponse("Invalid OTP",false));
@@ -189,8 +195,35 @@ public class PublicRestController {
     }
 
     @GetMapping("/portfolio/get")
-    public ResponseEntity<Portfolio> getPortfolio(String username){
+    public ResponseEntity<Portfolio> getPortfolio(@RequestParam String username){
         Portfolio portfolio = portfolioService.getPortfolio(username);
         return ResponseEntity.status(200).body(portfolio);
+    }
+
+    @PostMapping("/contact/send-msg")
+    public ResponseEntity<ApiResponse> sendMessage(@RequestBody @Valid UserContact userContact,
+                                                      @RequestParam String username){
+        String email = personRepo.getEmailByUsername(username);
+        if(email == null || email.equals("")){
+            return ResponseEntity.status(404).body(new ApiResponse("Email Not Found",false));
+        }
+        boolean success = emailService.sendMessage(userContact,email);
+        ApiResponse response = new ApiResponse();
+        response.setSuccess(success);
+        if(success){
+            response.setMessage("Message Sent Successfully");
+        }
+        else{
+            response.setMessage("Failed To Send Message");
+        }
+        return ResponseEntity.status(200).body(response);
+    }
+
+    @GetMapping("/validate/email")
+    public ResponseEntity<ApiResponse> validateEmail(@RequestParam String email){
+        boolean success = personRepo.doesEmailExist(email);
+        ApiResponse apiResponse =
+                new ApiResponse(success ? "Email exist" : "Email does not exist",success);
+        return ResponseEntity.status(200).body(apiResponse);
     }
 }

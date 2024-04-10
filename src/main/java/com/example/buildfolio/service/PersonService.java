@@ -23,4 +23,8 @@ public class PersonService {
     public boolean checkUserExistOrNot(String email, String userName){
         return personRepo.doesUserExistByEmailOrUsername(email,userName);
     }
+
+    public String getEmailByUsername(String username){
+        return personRepo.getEmailByUsername(username);
+    }
 }

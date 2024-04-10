@@ -75,4 +75,11 @@ public class PersonRepo {
         UpdateResult updateResult = mongoTemplate.updateFirst(query, update, Person.class,"person");
         return updateResult.getMatchedCount() >= 1 ? true : false;
     }
+
+    public String getEmailByUsername(String username){
+        Query query = new Query(Criteria.where("userName").is(username));
+        query.fields().include("email");
+        Person person = mongoTemplate.findOne(query, Person.class,"person");
+        return person.getEmail();
+    }
 }

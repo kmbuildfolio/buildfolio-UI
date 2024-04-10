@@ -1,6 +1,8 @@
 package com.example.buildfolio.controller;
 
 import com.example.buildfolio.model.ApiResponse;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -9,6 +11,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.nio.file.NoSuchFileException;
+import java.util.Set;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -22,7 +25,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse> validationExceptionHandler(MethodArgumentNotValidException exception){
-        ApiResponse response = new ApiResponse("Fields Are Not Valid",false);
+        StringBuilder msg = new StringBuilder();
+        exception.getBindingResult().getFieldErrors().forEach(error -> {
+            msg.append((!msg.isEmpty() ? " | " : "")+error.getDefaultMessage());
+        });
+        ApiResponse response = new ApiResponse(msg.toString(),false);
         return ResponseEntity.status(200).body(response);
     }
 
