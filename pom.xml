@@ -9,7 +9,7 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.vision</groupId>
-	<artifactId>builfolio</artifactId>
+	<artifactId>buildfolio</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>buildfolio</name>
 	<description>Demo project for Spring Boot</description>
