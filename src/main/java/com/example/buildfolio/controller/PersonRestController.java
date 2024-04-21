@@ -9,30 +9,25 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 
 @RestController
 @RequestMapping("/api/person")
 public class PersonRestController {
+
+    @Value("${cookie.samesite}")
+    private String same_site;
+
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse> logOut(HttpServletResponse res, HttpServletRequest req){
-        Cookie invalidatedCookie = new Cookie("authorization_token", null);
-        // Set the max age of the cookie to 0 to invalidate it
-        invalidatedCookie.setMaxAge(0);
-
-        // Set the cookie's path to match the original cookie's path
-        invalidatedCookie.setPath("/");
-        invalidatedCookie.setHttpOnly(true);
-        invalidatedCookie.setSecure(true);
-
-        // Add the cookie to the response
-        res.addCookie(invalidatedCookie);
+	ResponseCookie responseCookie = ResponseCookie.from("authorization_token",null)
+	.maxAge(0).path("/").sameSite(same_site).httpOnly(true).secure(true).build();
 
         ApiResponse response = new ApiResponse();
         response.setSuccess(true);
         response.setMessage("Logout Successfully");
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .header("isLogout", "true")
-                .body(response);
+        return ResponseEntity.status(200).header(HttpHeaders.SET_COOKIE,responseCookie.toString()).body(response);
     }
 }
