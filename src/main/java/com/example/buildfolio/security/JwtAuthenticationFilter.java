@@ -38,7 +38,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String origin = request.getHeader("Origin");
 
-        if (allowedOrigin.equals(origin)) {
+        if (allowedOrigin.equals(origin) || allowedOrigin.equals("*")) {
             // Origin is allowed, set the CORS header
             response.setHeader("Access-Control-Allow-Origin", origin);
         } else {
